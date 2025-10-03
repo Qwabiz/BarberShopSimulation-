@@ -2,19 +2,13 @@ import java.util.*;
 
 public class main {
     static final int CHAIRS = 6; 
-    static String[] shop = new String[CHAIRS]; // this is an array to hold client
-    static int vipCount = 0;   // numbering VIP clients
-    static int ordCount = 0;   // numbering ORD clients
+    static String[] shop = new String[CHAIRS]; // array for chairs
+    static int vipCount = 0;   // VIP numbering
+    static int ordCount = 0;   // ORD numbering
+    static Random rand = new Random();
 
-    // This is for printing the table header
-    static void printHeader() {
-        System.out.println("+--------------------------------------------------------------------------------+");
-        System.out.printf("%-5s | %-12s | %-60s |\n", "X", "Events", "State of the Shop");
-        System.out.println("+--------------------------------------------------------------------------------+");
-    }
-
-    // This is the state of the shop after each event
-    static void printState(int x, String event) {
+    // This will print the current state of the shop
+    static String getState() {
         StringBuilder state = new StringBuilder("[ ");
         for (int i = 0; i < CHAIRS; i++) {
             if (shop[i] == null) state.append("----");
@@ -22,54 +16,49 @@ public class main {
             if (i < CHAIRS - 1) state.append(" : ");
         }
         state.append(" ]");
-
-        System.out.printf("%-5d | %-12s | %-60s |\n", x, event, state.toString());
+        return state.toString();
     }
 
-    // Add VIP client (higher priority → shift ORD clients to the right)
+    // This will add VIP client (it will always takes first chair, shift others right)
     static String addVIP() {
         vipCount++;
         String client = "VIP" + vipCount;
 
-        // If the shop is full, the last client will leave
+        // If the shop is full → reject
         if (shop[CHAIRS - 1] != null) {
-            shop[CHAIRS - 1] = null;
+            return "+-" + client;
         }
 
-        // This will shift everyone to the right
+        // This will shift everyone right
         for (int i = CHAIRS - 1; i > 0; i--) {
             shop[i] = shop[i - 1];
         }
         shop[0] = client;
-
         return "++" + client;
     }
 
-    // This adds an  ORD client (normal → goes to the first empty seat if available)
+    // This adds an ORD client (goes to first empty seat)
     static String addORD() {
         ordCount++;
         String client = "ORD" + ordCount;
 
-        // If the shop is full, ORD client cannot enter
+        // If the shop is full → reject
         if (shop[CHAIRS - 1] != null) {
-            return "++" + client + " (Rejected)";
+            return "+-" + client;
         }
 
-        // Always find the first empty seat from the left
+        // Find the first empty chair
         for (int i = 0; i < CHAIRS; i++) {
             if (shop[i] == null) {
                 shop[i] = client;
-                break;
+                return "++" + client;
             }
         }
-        return "++" + client;
+        return "+-" + client; // fallback
     }
 
-    // Finish current client (remove the first client)
+    // Finish the client (then remove first chair)
     static String finishClient() {
-        if (shop[0] == null) {
-            return "--NONE"; 
-        }
         String leaving = shop[0];
         for (int i = 0; i < CHAIRS - 1; i++) {
             shop[i] = shop[i + 1];
@@ -78,27 +67,37 @@ public class main {
         return "--" + leaving;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         Scanner sc = new Scanner(System.in);
-        Random rand = new Random();
 
-        printHeader();
+        // Print header
+        System.out.printf("%-5s %-8s %-20s %-60s\n", "X", "", "Events", "State of the Shop");
+        System.out.println("------------------------------------------------------------------------------------------");
 
-        // Simulate 20 steps
-        for (int step = 1; step <= 20; step++) {
-            sc.nextLine(); 
-            int x = rand.nextInt(3); 
+        while (true) {
+            String input = sc.nextLine();
+            if (!input.equals("")) break; // if not ENTER → stop
+
+            int x;
+            while (true) {
+                x = rand.nextInt(4); // 0–3
+                if (x == 0 && shop[0] == null) continue; // skip if there is  no client
+                break;
+            }
+
             String event;
-
             if (x == 0) {
                 event = finishClient();
             } else if (x == 1) {
                 event = addVIP();
-            } else {
+            } else { // x == 2 or 3
                 event = addORD();
             }
 
-            printState(x, event);
+            // Format: X -----> Event     State
+            System.out.printf("%-5d -----> %-18s %-60s\n", x, event, getState());
         }
+
+        System.out.println("Simulation ended.");
     }
 }
